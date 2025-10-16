@@ -46,7 +46,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
 CMD ["gunicorn", "apiflask:app", \
      "--bind", "0.0.0.0:3000", \
      "--workers", "1", \
-     "--threads", "2", \
+     "--threads", "1", \
      "--worker-class", "gthread", \
      "--timeout", "120", \
      "--log-level", "info"]
