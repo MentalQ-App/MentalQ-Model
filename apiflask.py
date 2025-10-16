@@ -5,13 +5,7 @@ import stanza
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
 from gensim.models import Word2Vec
 import logging, warnings, os, re, string, gc
-
-# === Replace TF-Lite import: use lightweight runtime ===
-try:
-    from tflite_runtime.interpreter import Interpreter   # pip install tflite-runtime
-except ImportError:
-    # fallback if only TF is available (heavier). Prefer installing tflite-runtime.
-    from tensorflow.lite.python.interpreter import Interpreter
+from tensorflow.lite.python.interpreter import Interpreter, load_delegate
 
 # Silence warnings
 logging.basicConfig(level=logging.WARNING)
