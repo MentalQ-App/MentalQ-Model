@@ -5,7 +5,8 @@ import stanza
 from Sastrawi.StopWordRemover.StopWordRemoverFactory import StopWordRemoverFactory
 from gensim.models import Word2Vec
 import logging, warnings, os, re, string, gc
-from tensorflow.lite.python.interpreter import Interpreter, load_delegate
+from tensorflow.keras.models import load_model
+import tensorflow as tf
 
 # Silence warnings
 logging.basicConfig(level=logging.WARNING)
@@ -28,16 +29,8 @@ gc.collect()
 embedding_dim = 100
 max_sequence_length = 100
 
-# === TFLite: init interpreter once ===
-TFLITE_PATH = "model_save_ml/ml_model_lstm.tflite"
-interpreter = Interpreter(model_path=TFLITE_PATH, num_threads=min(2, (os.cpu_count() or 1)))
-interpreter.allocate_tensors()
-input_details = interpreter.get_input_details()
-output_details = interpreter.get_output_details()
-_input_idx = input_details[0]["index"]
-_input_dtype = input_details[0]["dtype"]      # typically int32
-_input_shape = tuple(input_details[0]["shape"])  # e.g. (1, 100)
-_output_idx = output_details[0]["index"]
+MODEL_PATH = "model_save_ml/ml_model_lstm.h5"
+model = load_model(MODEL_PATH)
 
 # === Precompute stopwords once ===
 _stop_factory = StopWordRemoverFactory()
@@ -96,25 +89,15 @@ def preprocess_input(text_raw):
     lemmas, tokens = lemmatize_and_tokenize_text(t)
     seq = text_to_sequence(tokens, word_index)
     padded = pad_sequences_np([seq], maxlen=max_sequence_length, padding='post')
-    # Ensure exact expected shape to avoid resize/allocate calls
-    if _input_shape == (1, max_sequence_length) and padded.shape != _input_shape:
-        padded = padded.reshape(_input_shape)
     return padded
 
-def tflite_predict(x: np.ndarray) -> np.ndarray:
-    x = x.astype(_input_dtype, copy=False)
-    # Avoid resizing unless absolutely necessary
-    if tuple(x.shape) != _input_shape:
-        interpreter.resize_tensor_input(_input_idx, x.shape, strict=False)
-        interpreter.allocate_tensors()
-    interpreter.set_tensor(_input_idx, x)
-    interpreter.invoke()
-    out = interpreter.get_tensor(_output_idx)
-    return out[0]
+def keras_predict(x: np.ndarray) -> np.ndarray:
+    preds = model.predict(x, verbose=0)
+    return preds[0]
 
 def predict_status_with_probabilities(text_raw):
     x = preprocess_input(text_raw)
-    probs = tflite_predict(x)
+    probs = keras_predict(x)
     idx = int(np.argmax(probs, axis=-1))
     label = label_encoder.inverse_transform([idx])[0]
     return label, probs
