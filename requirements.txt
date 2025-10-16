@@ -1,5 +1,6 @@
 Flask==2.1.2
 tensorflow==2.18.0
+gunicorn
 numpy==1.26.0
 stanza==1.9.2
 Sastrawi==1.0.1
