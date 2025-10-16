@@ -47,6 +47,6 @@ CMD ["gunicorn", "apiflask:app", \
      "--bind", "0.0.0.0:3000", \
      "--workers", "1", \
      "--threads", "1", \
-     "--worker-class", "gthread", \
+     "--worker-class", "sync", \
      "--timeout", "120", \
      "--log-level", "info"]
