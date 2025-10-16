@@ -13,6 +13,11 @@ logging.basicConfig(level=logging.WARNING)
 logging.getLogger('stanza').setLevel(logging.WARNING)
 warnings.filterwarnings("ignore", category=FutureWarning)
 
+os.environ["CUDA_VISIBLE_DEVICES"] = "-1"     # no GPU probing at all
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"      # quiet logs
+os.environ["TF_XLA_FLAGS"] = "--xla_gpu=false"  # don’t spin up XLA GPU backend
+
+
 # Initialize Stanza once
 nlp = stanza.Pipeline('id', processors='tokenize,lemma', use_gpu=False, tokenize_no_ssplit=True)
 
@@ -29,8 +34,13 @@ gc.collect()
 embedding_dim = 100
 max_sequence_length = 100
 
+try:
+    tf.config.set_visible_devices([], "GPU")
+except Exception:
+    pass
+
 MODEL_PATH = "model_save_ml/ml_model_lstm.h5"
-model = load_model(MODEL_PATH)
+model = load_model(MODEL_PATH, compile=False)
 
 # === Precompute stopwords once ===
 _stop_factory = StopWordRemoverFactory()
